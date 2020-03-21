@@ -1,0 +1,8 @@
+# Example Test Case Here:
+# ASYNC_PUT AAA aaa put
+# ASYNC_GET AAA 1 get
+# WAIT_TAG put
+# CHECK_TAG get aaa
+# CHECK_ONE AAA aaa 1
+# CHECK_ALL AAA aaa
+# Put your own manual test case in the `concurrent_tests` file.
