@@ -52,6 +52,7 @@ public class Coordinator {
      * TODO: define your own data structures here.
      */
     private static ReadWriteLock lock = null;
+    private static ArrayList<String> dataCenters = null;
     
     /**
      * Initializes a Coordinator object.
@@ -93,8 +94,10 @@ public class Coordinator {
          * TODO: initialize the data structures
         */
         lock = new ReadWriteLock();
-
-
+        dataCenters = new ArrayList<>();
+        dataCenters.add(dataCenter1);
+        dataCenters.add(dataCenter2);
+        dataCenters.add(dataCenter3);
 
 
     }
@@ -129,22 +132,18 @@ public class Coordinator {
                     // TODO: program here
                     synchronized(lock) {
                         lock.acquireLock(key, timestamp);
+                        System.out.println("Start PUT: " + timestamp.toString());
                         System.out.println("Put key: " + key + " value: " + value);
 
                         ArrayList<Thread> threads = new ArrayList<>();
-                        for(final int i = 0; i < 3; i++) {
+                        for(int i = 0; i < 3; i++) {
+                            final String dataCenter = dataCenters.get(i);
                             Thread t = new Thread(new Runnable() {
                                 public void run() {
-                                    switch (i) {
-                                        case 0:
-                                            KeyValueLib.PUT(dataCenter1, key, value);
-                                            break;
-                                        case 1:
-                                            KeyValueLib.PUT(dataCenter2, key, value);
-                                            break;
-                                        case 2:
-                                            KeyValueLib.PUT(dataCenter3, key, value);
-                                            break;
+                                    try {
+                                        KeyValueLib.PUT(dataCenter, key, value);
+                                    } catch (Exception e) {
+                                        LOGGER.error("PutHandler Exception: " + e.getMessage());
                                     }
                                 }
                             });
@@ -159,6 +158,7 @@ public class Coordinator {
                                 // Catch exception if thread is interrupted;
                             }
                         }
+
                         lock.releaseLock(key);
                     }
 
@@ -208,6 +208,7 @@ public class Coordinator {
                     // TODO: program here
                     synchronized (lock) {
                         lock.acquireLock(key, timestamp);
+                        System.out.println("Start GET: " + timestamp.toString());
                         System.out.println("GET Key: " + key + " loc: " + loc);
                         switch (loc) {
                             case "1":
