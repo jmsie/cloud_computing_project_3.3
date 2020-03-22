@@ -205,6 +205,9 @@ public class Coordinator {
         /*
          * TODO: re-initialize the data structures.
          */
+
+        lock = null;
+        lock = new ReadWriteLock();
         
         context.response().end();
     }
