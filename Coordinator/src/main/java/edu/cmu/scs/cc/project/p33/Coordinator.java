@@ -50,7 +50,7 @@ public class Coordinator {
     /*
      * TODO: define your own data structures here.
      */
-
+    private static ReadWriteLock lock = null;
     
     /**
      * Initializes a Coordinator object.
@@ -91,6 +91,7 @@ public class Coordinator {
         /*
          * TODO: initialize the data structures
         */
+        lock = new ReadWriteLock();
 
 
 
@@ -125,6 +126,8 @@ public class Coordinator {
                 try {
 
                     // TODO: program here
+                    // 1.
+
 
                 } catch (Exception e) {
                     LOGGER.error("PutHandler Exception: " + e.getMessage());
