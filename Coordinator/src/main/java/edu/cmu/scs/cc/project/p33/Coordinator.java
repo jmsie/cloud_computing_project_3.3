@@ -7,6 +7,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import org.apache.log4j.Logger;
@@ -126,7 +127,40 @@ public class Coordinator {
                 try {
 
                     // TODO: program here
-                    // 1.
+                    synchronized(lock) {
+                        lock.acquireLock(key, timestamp);
+                        System.out.println("Put key: " + key + " value: " + value);
+
+                        ArrayList<Thread> threads = new ArrayList<>();
+                        for(final int i = 0; i < 3; i++) {
+                            Thread t = new Thread(new Runnable() {
+                                public void run() {
+                                    switch (i) {
+                                        case 0:
+                                            KeyValueLib.PUT(dataCenter1, key, value);
+                                            break;
+                                        case 1:
+                                            KeyValueLib.PUT(dataCenter2, key, value);
+                                            break;
+                                        case 2:
+                                            KeyValueLib.PUT(dataCenter3, key, value);
+                                            break;
+                                    }
+                                }
+                            });
+                            t.start();
+                            threads.add(t);
+                        }
+                        // Wait for all launched threads to finish
+                        for (int i = 0; i < 3; i++) {
+                            try {
+                                threads.get(i).join();
+                            } catch (InterruptedException e) {
+                                // Catch exception if thread is interrupted;
+                            }
+                        }
+                        lock.releaseLock(key);
+                    }
 
 
                 } catch (Exception e) {
@@ -172,6 +206,22 @@ public class Coordinator {
                 try {
 
                     // TODO: program here
+                    synchronized (lock) {
+                        lock.acquireLock(key, timestamp);
+                        System.out.println("GET Key: " + key + " loc: " + loc);
+                        switch (loc) {
+                            case "1":
+                                value = KeyValueLib.GET(dataCenter1, key);
+                                break;
+                            case "2":
+                                value = KeyValueLib.GET(dataCenter2, key);
+                                break;
+                            case "3":
+                                value = KeyValueLib.GET(dataCenter3, key);
+                                break;
+                        }
+                        lock.releaseLock(key);
+                    }
 
                 } catch (Exception e) {
                     LOGGER.error("GetHandler Exception: " + e.getMessage());
