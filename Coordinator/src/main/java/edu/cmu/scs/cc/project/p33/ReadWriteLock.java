@@ -1,39 +1,84 @@
 package edu.cmu.scs.cc.project.p33;
 
-import java.util.PriorityQueue;
+import java.time.LocalDate;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.PriorityBlockingQueue;
 
 public class ReadWriteLock {
-    private ConcurrentHashMap<String, PriorityQueue<Long>> keyLock = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, PriorityBlockingQueue<Long>> keyLock = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Integer> readers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Integer> writers = new ConcurrentHashMap<>();
 
-    // Try to get the lock
-    public synchronized void acquireLock(String key, Long timestamp) throws InterruptedException {
-        PriorityQueue<Long> lock = null;
+    public synchronized void addLock(String key, Long timestamp) {
+        PriorityBlockingQueue<Long> lock = null;
         if (keyLock.containsKey(key)) {
             lock = keyLock.get(key);
         } else {
-            lock = new PriorityQueue<>();
+            lock = new PriorityBlockingQueue<>();
             keyLock.put(key, lock);
+            writers.put(key, new Integer(0));
+            readers.put(key, new Integer(0));
         }
         // Insert the timestamp into the pq
-        System.out.println("Acquire lock: " + key);
         lock.add(timestamp);
-        // Wait if len(pq) != 0 and pq.head != key?
+    }
 
+    // Try to get the lock
+    public synchronized void acquireLock(String key, Long timestamp) throws InterruptedException {
+        addLock(key, timestamp);
+        PriorityBlockingQueue<Long> lock = keyLock.get(key);
         while (!lock.peek().equals(timestamp)) {
             wait();
         }
-        System.out.println("Got lock: " + key);
     }
 
-    public synchronized void releaseLock(String key) {
+    public synchronized void releaseLock(String key, Long timestamp) {
         // Pop the first element in the pq
         // nodifyAll() to let other get the lock
-        PriorityQueue<Long> lock = keyLock.get(key);
-        System.out.println("Release lock: " + key);
-        lock.poll();
+        PriorityBlockingQueue<Long> lock = keyLock.get(key);
+        //lock.poll();
+        lock.remove(timestamp);
         notifyAll();
     }
 
+    public synchronized void acquireReadLock(String key, Long timestamp) throws InterruptedException {
+        addLock(key, timestamp);
+        PriorityBlockingQueue<Long> lock = keyLock.get(key);
+        Integer writer = writers.get(key);
+        Integer reader = readers.get(key);
+        while (!lock.peek().equals(timestamp) || writer > 0) {
+            wait();
+        }
+        reader++;
+
+    }
+    public synchronized void acquireWriteLock(String key, Long timestamp) throws InterruptedException {
+        addLock(key, timestamp);
+        PriorityBlockingQueue<Long> lock = keyLock.get(key);
+        Integer writer = writers.get(key);
+        Integer reader = readers.get(key);
+        while (!lock.peek().equals(timestamp) || reader > 0) {
+            wait();
+        }
+        writer++;
+    }
+
+    public synchronized void releaseReadLock(String key, Long timestamp) {
+        PriorityBlockingQueue<Long> lock = keyLock.get(key);
+        //lock.poll();
+        lock.remove(timestamp);
+        Integer reader = readers.get(key);
+        reader--;
+        notifyAll();
+    }
+
+    public synchronized void releaseWriteLock(String key, Long timestamp) {
+        PriorityBlockingQueue<Long> lock = keyLock.get(key);
+        //lock.poll();
+        lock.remove(timestamp);
+        Integer writer = readers.get(key);
+        writer--;
+        notifyAll();
+    }
 
 }

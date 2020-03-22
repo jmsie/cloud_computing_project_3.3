@@ -130,37 +130,35 @@ public class Coordinator {
                 try {
 
                     // TODO: program here
-                    synchronized(lock) {
-                        lock.acquireLock(key, timestamp);
-                        System.out.println("Start PUT: " + timestamp.toString());
-                        System.out.println("Put key: " + key + " value: " + value);
+                    lock.acquireWriteLock(key, timestamp);
+                    //System.out.println("Start PUT: " + timestamp.toString());
+                    //System.out.println("Put key: " + key + " value: " + value);
 
-                        ArrayList<Thread> threads = new ArrayList<>();
-                        for(int i = 0; i < 3; i++) {
-                            final String dataCenter = dataCenters.get(i);
-                            Thread t = new Thread(new Runnable() {
-                                public void run() {
-                                    try {
-                                        KeyValueLib.PUT(dataCenter, key, value);
-                                    } catch (Exception e) {
-                                        LOGGER.error("PutHandler Exception: " + e.getMessage());
-                                    }
+                    ArrayList<Thread> threads = new ArrayList<>();
+                    for(int i = 0; i < 3; i++) {
+                        String dataCenter = dataCenters.get(i);
+                        Thread t = new Thread(new Runnable() {
+                            public void run() {
+                                try {
+                                    KeyValueLib.PUT(dataCenter, key, value);
+                                } catch (Exception e) {
+                                    LOGGER.error("PutHandler Exception: " + e.getMessage());
                                 }
-                            });
-                            t.start();
-                            threads.add(t);
-                        }
-                        // Wait for all launched threads to finish
-                        for (int i = 0; i < 3; i++) {
-                            try {
-                                threads.get(i).join();
-                            } catch (InterruptedException e) {
-                                // Catch exception if thread is interrupted;
                             }
-                        }
-
-                        lock.releaseLock(key);
+                        });
+                        t.start();
+                        threads.add(t);
                     }
+                    // Wait for all launched threads to finish
+                    for (int i = 0; i < 3; i++) {
+                        try {
+                            threads.get(i).join();
+                        } catch (InterruptedException e) {
+                            // Catch exception if thread is interrupted;
+                        }
+                    }
+
+                    lock.releaseWriteLock(key, timestamp);
 
 
                 } catch (Exception e) {
@@ -206,23 +204,21 @@ public class Coordinator {
                 try {
 
                     // TODO: program here
-                    synchronized (lock) {
-                        lock.acquireLock(key, timestamp);
-                        System.out.println("Start GET: " + timestamp.toString());
-                        System.out.println("GET Key: " + key + " loc: " + loc);
-                        switch (loc) {
-                            case "1":
-                                value = KeyValueLib.GET(dataCenter1, key);
-                                break;
-                            case "2":
-                                value = KeyValueLib.GET(dataCenter2, key);
-                                break;
-                            case "3":
-                                value = KeyValueLib.GET(dataCenter3, key);
-                                break;
-                        }
-                        lock.releaseLock(key);
+                    lock.acquireReadLock(key, timestamp);
+                    //System.out.println("Start GET: " + timestamp.toString());
+                    //System.out.println("GET Key: " + key + " loc: " + loc);
+                    switch (loc) {
+                        case "1":
+                            value = KeyValueLib.GET(dataCenter1, key);
+                            break;
+                        case "2":
+                            value = KeyValueLib.GET(dataCenter2, key);
+                            break;
+                        case "3":
+                            value = KeyValueLib.GET(dataCenter3, key);
+                            break;
                     }
+                    lock.releaseReadLock(key, timestamp);
 
                 } catch (Exception e) {
                     LOGGER.error("GetHandler Exception: " + e.getMessage());
